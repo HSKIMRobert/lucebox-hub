@@ -1476,10 +1476,29 @@ static int ds4_comp_rows_used(const ggml_tensor * comp_cache, int n_cached, int 
 }
 
 // Round the live compressed-row count up to a fixed stride so the fused decode
-// graph topology repeats across steps (enabling CUDA/HIP graph replay). The
-// rows in [n_comp, padded) are masked to -1e30 in the score matrix, which
-// underflows to exactly 0 in softmax, so a padded read is bit-identical to an
-// unpadded read of the first n_comp rows.
+// graph topology repeats across steps (enabling CUDA/HIP graph replay).
+//
+// The rows in [n_comp, padded) are masked to -1e30 in the score matrix and
+// underflow to exactly 0 in softmax, so they contribute no value. They do
+// change the arithmetic: the reduction they join is longer, and a longer
+// parallel reduction sums in a different order, so the surviving terms round
+// differently. Two strides therefore do not agree token-for-token on a
+// generation long enough to cross a boundary where their padding differs.
+//
+// Measured on a Radeon 8060S (gfx1151) with DeepSeek V4 Flash, DSpark q=4,
+// temperature 0, a free-form prompt and 200 generated tokens, each stride
+// deterministic across its own runs:
+//
+//   stride 16   326182af...  (repeated, identical)
+//   stride 128  973cc7a4...
+//
+// A 128-token benchmark prompt stays identical between the two, which is how
+// this went unnoticed: it never crosses a differing boundary. Quality is not
+// affected either way (60/60 on the exact-copy fidelity check in DS4.md), and
+// the coarser stride is much faster because the padded row count is part of
+// the fused verify graph's shape key -- see the pull request. But it is a
+// speed/exactness trade, not a free one, so treat a change of stride the way
+// you would treat --ds4-prefill sparse.
 static int ds4_comp_pad_stride() {
     static const int stride = [] {
         constexpr int default_stride = 16;
