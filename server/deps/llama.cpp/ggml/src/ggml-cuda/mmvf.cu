@@ -786,6 +786,26 @@ void ggml_cuda_op_mul_mat_vec_f(
     GGML_UNUSED_VARS(ctx, src1, dst, src1_ddq_i, src1_ncols, src1_padded_row_size);
 }
 
+// LUCE_MMVF_MAX_NCOLS_F16: ceiling on ne11 at or below which an F16 mul_mat
+// prefers this file's mul_mat_vec kernel over rocBLAS on AMD. Unset (or 0)
+// keeps the per-architecture values chosen below, so this changes nothing on
+// its own.
+//
+// The knob exists because crossing that ceiling is a cliff, not a slope. For a
+// tall-skinny F16 weight rocBLAS can pick a macro tile that covers the whole
+// output in a SINGLE workgroup and performs the entire K reduction inside it,
+// which uses a small fraction of the GPU however wide the GPU is. gfx1151
+// (RDNA 3.5, Strix Halo) currently inherits the RDNA3 ceiling of 3, a value
+// measured on discrete RX 7000 cards; on unified memory a verify width of 4
+// lands one column past it. See the pull request for the measurement.
+static int luce_mmvf_f16_max_ncols() {
+    static const int value = []() {
+        const char * e = getenv("LUCE_MMVF_MAX_NCOLS_F16");
+        return e ? atoi(e) : 0;
+    }();
+    return value;
+}
+
 bool ggml_cuda_should_use_mmvf(enum ggml_type type, int cc, const int64_t * src0_ne, const size_t * src0_nb, int64_t ne11) {
     if (src0_ne[0] % 2 != 0) {
         return false;
@@ -835,6 +855,10 @@ bool ggml_cuda_should_use_mmvf(enum ggml_type type, int cc, const int64_t * src0
                 return ne11 <= 8;
             } else if (GGML_CUDA_CC_IS_AMD(cc)) {
                 if (fp16_mma_hardware_available(cc)) {
+                    const int ceiling = luce_mmvf_f16_max_ncols();
+                    if (ceiling > 0) {
+                        return ne11 <= ceiling;
+                    }
                     if (GGML_CUDA_CC_IS_RDNA3(cc)) {
                         return ne11 <= 3;
                     }
