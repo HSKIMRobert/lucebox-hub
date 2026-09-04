@@ -8354,6 +8354,17 @@ bool deepseek4_step_layer_range(
             out_logits->resize((size_t)w.n_vocab);
             ggml_backend_tensor_get(cached_decode_output_graph.sg.logits,
                                     out_logits->data(), 0, sizeof(float) * (size_t)w.n_vocab);
+            if (verify_hooks && verify_hooks->all_logits_out) {
+                // reuse_decode_graphs implies n_tokens == 1, so this single
+                // row IS the whole verify batch of this call. Leaving the
+                // hook empty is invisible until a caller concatenates it:
+                // the compressor-boundary splitter above runs a q-token
+                // verify as q single-token chunks and joins their hook
+                // vectors, so an empty chunk silently drops the logits of
+                // the entire verify batch and the verify fails with
+                // "all_logits too small".
+                *verify_hooks->all_logits_out = *out_logits;
+            }
         } else {
             const size_t ctx_size = 16 * 1024 * 1024;
             ggml_init_params params{};
