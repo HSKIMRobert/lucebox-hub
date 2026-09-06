@@ -1896,8 +1896,9 @@ int DeepSeek4Backend::do_prefill(const std::vector<int32_t> & tokens,
     const bool hybrid_batch_supported =
         !moe_hybrid_ || cfg_.prefill_mode == PrefillAttentionMode::Sparse;
     const int base_chunk =
-        !prefill_attention_mode_is_approximate(cfg_.prefill_mode) ||
-        !hybrid_batch_supported
+        !hybrid_batch_supported ||
+        (cfg_.prefill_mode == PrefillAttentionMode::Exact &&
+         spec_drafter_ != nullptr)
         ? 1
         : std::max(1, std::min(requested_chunk,
                                layer_major_cap));
