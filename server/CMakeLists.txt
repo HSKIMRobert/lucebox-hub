@@ -1396,6 +1396,11 @@ if(LUCE_TESTS)
         target_include_directories(test_cuda_copy_batch PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/deps/llama.cpp/ggml/include)
         target_link_libraries(test_cuda_copy_batch PRIVATE ggml ${LUCE_GGML_BACKEND_TARGET})
+        # Same cases with graph copy batching switched off.
+        add_test(NAME test_cuda_copy_batch_disabled COMMAND test_cuda_copy_batch)
+        set_tests_properties(test_cuda_copy_batch_disabled PROPERTIES
+            SKIP_RETURN_CODE 77
+            ENVIRONMENT "GGML_CUDA_DISABLE_COPY_BATCH=1")
     endif()
     if(LUCE_GPU_BACKEND STREQUAL "hip")
         add_executable(test_ds4_maskless_prefill test/test_ds4_maskless_prefill.cpp)

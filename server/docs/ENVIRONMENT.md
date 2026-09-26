@@ -27,6 +27,7 @@ consolidation of this list into CLI flags is tracked as follow-up work.
 | `LUCE_DRAFT_KV` | 1 | KILL SWITCH (remove after burn-in): =0 restores the legacy per-step drafter window recompute instead of the ring cache. |
 | `LUCE_LAGUNA_SWA_RING` | 1 | KILL SWITCH (remove after burn-in): =0 keeps SWA layers on pool-sized caches under KVFlash. |
 | `LUCE_PROF` | unset | DEBUG: comma list of profilers (step,verify,prefill). Replaces LUCE_LAGUNA_{STEP,VERIFY,PREFILL}_PROF. |
+| `GGML_CUDA_DISABLE_COPY_BATCH` | unset | KILL SWITCH (burn-in): set to issue one device memcpy per plain CPY node again. By default ggml-cuda gathers runs of consecutive same-type contiguous CPY nodes with independent byte ranges into one batched copy launch. |
 | `GGML_CUDA_GRAPH_STATS` | unset | DEBUG: per-graph CUDA-graph replay/capture/eager counters. |
 | `GGML_CUDA_GRAPH_STATS_EVERY` | 200 | DEBUG: print period for the stats above (clamped to >=1). |
 | `LUCE_ADAPTIVE_K_TAU` | 0 = off | Prefer the CLI: --adaptive-experts [tau]. Cumulative combine-weight threshold for per-token expert gating. |
@@ -352,6 +353,7 @@ consolidation of this list into CLI flags is tracked as follow-up work.
 - `LUCE_FA256_WMMA_MAX_KV` - fattn.cu (ggml-cuda) (rocWMMA/raw-MMA crossover KV length in flag builds)
 - `GGML_HIP_ROCWMMA_FATTN` - server/CMakeLists.txt (BUILD OPTION, not an env var: compiles the rocWMMA fattn kernel; required by `LUCE_FA256_WMMA` and the sub-32K head-256 prefill route)
 - `GGML_CUDA_BATCH_PEER_COPIES` - ggml-cuda.cu (ggml-cuda), deepseek4_fused_verify.inc, moe_hybrid_ffn_eval.cpp
+- `GGML_CUDA_DISABLE_COPY_BATCH` - ggml-cuda.cu (ggml-cuda)
 - `GGML_CUDA_GRAPH_MAX_KEYS` - common.cuh (ggml-cuda)
 - `GGML_CUDA_DISABLE_GRAPHS` - common.cuh (ggml-cuda), server_main.cpp (any value disables CUDA/HIP graph capture; the server sets it to 1 when one process serves more than one model block, see `LUCE_MULTI_MODEL_GRAPHS`)
 - `GGML_CUDA_MLA_DENSE_HIGH_RATIO` - fattn.cu, deepseek4_backend.cpp, deepseek4_graph.cpp
