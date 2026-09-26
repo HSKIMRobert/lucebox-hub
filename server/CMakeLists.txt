@@ -1312,6 +1312,22 @@ if(LUCE_TESTS)
         target_link_libraries(test_deepseek4_hc_cuda PRIVATE luce_common ${LUCE_GGML_BACKEND_TARGET})
         list(APPEND _raw_unit_test_targets test_deepseek4_hc_cuda)
     endif()
+    # Helper copies must not break another thread's graph capture (several
+    # models served by one process).
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/test_capture_safe_copies.cpp")
+        add_executable(test_capture_safe_copies test/test_capture_safe_copies.cpp)
+        target_include_directories(test_capture_safe_copies PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        if(LUCE_GPU_BACKEND STREQUAL "hip")
+            target_compile_definitions(test_capture_safe_copies PRIVATE LUCE_BACKEND_HIP=1 GGML_USE_HIP)
+            target_link_libraries(test_capture_safe_copies PRIVATE hip::host)
+        else()
+            target_compile_definitions(test_capture_safe_copies PRIVATE LUCE_BACKEND_CUDA=1)
+            target_link_libraries(test_capture_safe_copies PRIVATE CUDA::cudart)
+        endif()
+        target_link_libraries(test_capture_safe_copies PRIVATE luce_common Threads::Threads)
+        # Registered through the CppUnit list below.
+    endif()
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/test_deepseek4_mmid_grouped_cuda.cpp")
         add_executable(test_deepseek4_mmid_grouped_cuda test/test_deepseek4_mmid_grouped_cuda.cpp)
         if(LUCE_GPU_BACKEND STREQUAL "hip")
@@ -2377,6 +2393,7 @@ if(LUCE_TESTS)
         test_ggml_cluster_allreduce
         test_qwen35_tensor_parallel
         test_deepseek4_hc_cuda
+        test_capture_safe_copies
         test_flashprefill_kernels
         test_cuda_comm_api
         test_mmq_streamk_iq4_xs

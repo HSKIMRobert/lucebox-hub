@@ -88,6 +88,7 @@ consolidation of this list into CLI flags is tracked as follow-up work.
 | `LUCE_DS4_SPEC` / `LUCE_DS4_DRAFT` / `LUCE_DS4_DRAFT_BACKEND` / `LUCE_DS4_DRAFT_GPU` | unset | OPT-IN: enable DeepSeek4 DSpark, select its draft GGUF, and optionally select the local drafter backend/device. See `DS4.md`. |
 | `LUCE_DS4_CUDA_LAYERS` | auto | Override the DeepSeek4 heterogeneous layer-split heuristic. See `DS4.md`. |
 | `LUCE_ROCMFP2_ROW4` | 1 on gfx1151 for q>2; legacy two-row kernel elsewhere | BURN-IN KILL SWITCH: =0 restores two-row-per-wave ROCmFP2 verification kernels. |
+| `LUCE_MULTI_MODEL_GRAPHS` | unset | =1 keeps GPU graph capture on when one process serves several model blocks (`--load-balancing`). By default the server sets `GGML_CUDA_DISABLE_GRAPHS=1` there, because concurrent captures from different model workers invalidate each other. |
 
 ## Full inventory (generated)
 
@@ -296,6 +297,7 @@ consolidation of this list into CLI flags is tracked as follow-up work.
 - `LUCE_MOE_PREFILL_MASKED_COLD` - moe_hybrid_ffn_eval.cpp
 - `LUCE_MOE_PREFILL_PERSISTENT_OWNER_ALLOC` - deepseek4_graph.cpp
 - `LUCE_MOE_TP_BACKEND` - deepseek4_backend.cpp
+- `LUCE_MULTI_MODEL_GRAPHS` - server_main.cpp
 - `LUCE_NO_MASK` - laguna_backend.cpp
 - `LUCE_NO_MOE_ROUTER_FUSE` - qwen35moe_ffn.cpp
 - `LUCE_NO_MOE_SWIGLU_FUSE` - qwen35moe_ffn.cpp
@@ -351,6 +353,7 @@ consolidation of this list into CLI flags is tracked as follow-up work.
 - `GGML_HIP_ROCWMMA_FATTN` - server/CMakeLists.txt (BUILD OPTION, not an env var: compiles the rocWMMA fattn kernel; required by `LUCE_FA256_WMMA` and the sub-32K head-256 prefill route)
 - `GGML_CUDA_BATCH_PEER_COPIES` - ggml-cuda.cu (ggml-cuda), deepseek4_fused_verify.inc, moe_hybrid_ffn_eval.cpp
 - `GGML_CUDA_GRAPH_MAX_KEYS` - common.cuh (ggml-cuda)
+- `GGML_CUDA_DISABLE_GRAPHS` - common.cuh (ggml-cuda), server_main.cpp (any value disables CUDA/HIP graph capture; the server sets it to 1 when one process serves more than one model block, see `LUCE_MULTI_MODEL_GRAPHS`)
 - `GGML_CUDA_MLA_DENSE_HIGH_RATIO` - fattn.cu, deepseek4_backend.cpp, deepseek4_graph.cpp
 - `GGML_CUDA_MLA_DENSE_WMMA` - fattn.cu, deepseek4_backend.cpp, deepseek4_graph.cpp
 - `GGML_CUDA_MLA_NO_SPLIT_KV` - ds4-env.cuh (fattn.cu)
