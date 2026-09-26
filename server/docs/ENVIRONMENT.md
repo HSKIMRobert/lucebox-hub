@@ -61,6 +61,7 @@ consolidation of this list into CLI flags is tracked as follow-up work.
 | `GGML_SCHED_PROFILE` / `GGML_SCHED_PROFILE_MIN_SPLITS` | unset / 1 | DEBUG: report scheduler splits, copy volume, submission time, and source/destination synchronization time. |
 | `LUCE_DS4_TP_FUSED_CACHE_SLOTS` | 8, 24 with `LUCE_DS4_Q5_VERIFY` | BURN-IN: number of heterogeneous verifier schedulers retained; higher values retain substantially more scratch on both GPUs. |
 | `LUCE_DS4_VERIFY_FORCE_GRAPH_REPLAY` | unset | OPT-IN: bypass graph property scans only after warmup; scheduler-generation checks remain mandatory. |
+| `LUCE_DS4_DEVICE_ROLLBACK` | 1 | KILL SWITCH (burn-in): =0 restores the per-row DS4 speculative-rollback copies (blocking host copies by default, stream-ordered with `LUCE_DS4_ASYNC_ROLLBACK=1`, pinned host staging with `LUCE_DS4_PINNED_ROLLBACK=1`). By default, when the verifier runs on a CUDA/HIP backend that holds every rollback tensor, save and apply stage in device memory with one batched copy each (`ggml_backend_cuda_copy_batch_async`), whatever the async/pinned switches say. |
 | `LUCE_DS4_ROCTX` | unset | DEBUG: on HIP builds, dynamically load ROCTX and emit semantic DS4 prefill, speculative-decode, and layer-range markers for external rocprof traces. No events, timing, or device synchronization are added. |
 | `LUCE_QWEN35_ROCTX` | unset | DEBUG: on HIP builds, dynamically load ROCTX and mark Qwen concurrent steps, graph compute, and argmax readback with live, padded, and packed-prefill shape metadata. |
 | `LUCE_CUDA_MMVF_NARROW_F16` | enabled on qualified gfx1151 narrow F16 matmuls | BURN-IN KILL SWITCH: =0 restores the generic dispatch decision for the narrow F16 projection optimization, unless an explicit `LUCE_MMVF_MAX_NCOLS_F16` ceiling overrides it. |
@@ -137,6 +138,8 @@ consolidation of this list into CLI flags is tracked as follow-up work.
 - `LUCE_DS4_HYBRID_PREFILL_GPU_HC` - deepseek4_graph.cpp
 - `LUCE_DS4_Q5_VERIFY` - deepseek4_backend.cpp, deepseek4_dspark_spec.cpp, deepseek4_fused_verify.inc, deepseek4_graph.cpp (gfx1151 DSpark default =1: five-row fused verifier and the 24-slot cache; =0 restores the q<=4 verifier)
 - `LUCE_DS4_PINNED_ROLLBACK` - deepseek4_dspark_spec.cpp (gfx1151 DSpark default =1: pinned host rollback state; =0 restores pageable copies)
+- `LUCE_DS4_DEVICE_ROLLBACK` - deepseek4/deepseek4_dspark_spec.cpp
+- `LUCE_DS4_ASYNC_ROLLBACK` - deepseek4_dspark_spec.cpp (=1: stream-ordered per-row rollback copies when device staging is off)
 - `LUCE_DS4_COMP_PAD_STRIDE` - deepseek4_graph.cpp
 - `LUCE_DS4_CROSS_VENDOR_OWNER_SUMS` - deepseek4_fused_verify.inc
 - `LUCE_DS4_CUDA_LAYERS` - deepseek4_layer_split_adapter.cpp
