@@ -2069,6 +2069,7 @@ if(LUCE_TESTS)
             test/test_spec_acceptance.cpp
             test/test_ds4_env.cpp
             test/test_kvflash_ubatch.cpp
+            test/test_qwen35_mask_upload.cpp
             test/test_adaptive_keep_ratio.cpp
             test/test_skip_park_guard.cpp
             test/test_bandit_integration.cpp
@@ -2166,6 +2167,12 @@ if(LUCE_TESTS)
             unset(_server_unit_ctest_generated)
             unset(_server_unit_ctest_include)
         endif()
+        # The Qwen35 mask upload cases again with the full-width kill switch
+        # (read once per process, so it needs its own run).
+        add_test(NAME server_unit_qwen35_mask_full_width
+            COMMAND test_server_unit Qwen35MaskUploadFixture)
+        set_tests_properties(server_unit_qwen35_mask_full_width PROPERTIES
+            ENVIRONMENT "LUCE_QWEN35_MASK_FULL_WIDTH=1")
         unset(_server_unit_sources)
         list(APPEND _raw_unit_test_targets test_server_unit)
     endif()
